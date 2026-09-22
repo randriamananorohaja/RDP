@@ -1,0 +1,12 @@
+/* Custom styles for Petri Net nodes */
+.react-flow__node-place {
+  cursor: pointer;
+}
+
+.react-flow__node-transition {
+  cursor: pointer;
+}
+
+.react-flow__node:hover {
+  filter: brightness(1.1);
+}

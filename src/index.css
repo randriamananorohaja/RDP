@@ -1,0 +1,93 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+* {
+  box-sizing: border-box;
+}
+
+html, body, #root {
+  height: 100%;
+  margin: 0;
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  background: #0f172a;
+  color: #e2e8f0;
+}
+
+/* Animation fluide pour les marquages */
+@keyframes pulse-token {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.15); }
+}
+
+@keyframes glow {
+  0%, 100% { box-shadow: 0 0 20px rgba(56, 189, 248, 0.4); }
+  50% { box-shadow: 0 0 35px rgba(56, 189, 248, 0.8); }
+}
+
+@keyframes fire {
+  0%, 100% { 
+    background: linear-gradient(135deg, #f97316, #ef4444);
+    box-shadow: 0 0 25px rgba(249, 115, 22, 0.6);
+  }
+  50% { 
+    background: linear-gradient(135deg, #fb923c, #f43f5e);
+    box-shadow: 0 0 40px rgba(251, 146, 60, 0.9);
+  }
+}
+
+.animate-pulse-token {
+  animation: pulse-token 1.5s ease-in-out infinite;
+}
+
+.animate-glow {
+  animation: glow 2s ease-in-out infinite;
+}
+
+.transition-fire {
+  animation: fire 1s ease-in-out infinite;
+}
+
+/* React Flow overrides */
+.react-flow__attribution {
+  display: none;
+}
+
+.react-flow__handle {
+  width: 8px;
+  height: 8px;
+  background: #38bdf8;
+  border: 2px solid #0f172a;
+}
+
+.react-flow__edge-path {
+  stroke-width: 2.5;
+}
+
+.react-flow__controls {
+  background: #1e293b !important;
+  border-radius: 12px !important;
+  border: 1px solid #334155 !important;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.3) !important;
+  overflow: hidden;
+}
+
+.react-flow__controls-button {
+  background: #1e293b !important;
+  border-bottom: 1px solid #334155 !important;
+  fill: #38bdf8 !important;
+}
+
+.react-flow__controls-button:hover {
+  background: #334155 !important;
+}
+
+.react-flow__minimap {
+  background: #1e293b !important;
+  border-radius: 12px !important;
+  border: 1px solid #334155 !important;
+}
+
+.react-flow__background {
+  background-color: #0f172a;
+}
