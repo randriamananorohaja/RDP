@@ -6,51 +6,50 @@ export function TransitionNode({ data, selected }) {
 
   useEffect(() => {
     const interval = setInterval(() => {
-      if (Math.random() > 0.7) {
+      if (Math.random() > 0.82) {
         setIsFiring(true);
-        setTimeout(() => setIsFiring(false), 1000);
+        setTimeout(() => setIsFiring(false), 700);
       }
-    }, 5000);
+    }, 6000);
     return () => clearInterval(interval);
   }, []);
 
   return (
-    <div className="relative flex flex-col items-center group">
+    <div className="relative flex flex-col items-center">
       <div
-        className={`relative w-36 h-16 rounded-xl flex flex-col items-center justify-center
-                    backdrop-blur transition-all duration-300 cursor-grab active:cursor-grabbing
-                    ${isFiring ? 'transition-fire' : ''}
-                    ${selected && !isFiring ? 'ring-2 ring-cyan-400 ring-offset-2 ring-offset-slate-900' : ''}`}
+        className={`relative w-32 h-14 rounded-lg flex flex-col items-center justify-center
+                    transition-all duration-200 cursor-grab active:cursor-grabbing
+                    ${selected && !isFiring ? 'ring-2 ring-cyan-500/60 ring-offset-1 ring-offset-slate-900' : ''}`}
         style={{
           background: isFiring
-            ? undefined
-            : 'linear-gradient(135deg, #1e293b, #334155)',
-          border: `2px solid ${isFiring ? '#fb923c' : '#475569'}`,
+            ? 'linear-gradient(135deg, #c2410c, #9a3412)'
+            : '#1e293b',
+          border: `1.5px solid ${isFiring ? '#ea580c' : '#475569'}`,
           boxShadow: isFiring
-            ? undefined
-            : '0 8px 25px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.1)',
+            ? '0 0 16px rgba(234, 88, 12, 0.35)'
+            : '0 2px 8px rgba(0,0,0,0.25)',
         }}
       >
-        <div className="flex items-center gap-2 text-white">
-          <span className="text-lg">{data.icon}</span>
-          <span className="text-xs font-semibold text-center leading-tight px-1">
+        <div className="flex items-center gap-1.5 text-slate-100">
+          <span className="text-sm opacity-90">{data.icon}</span>
+          <span className="text-[11px] font-medium text-center leading-tight px-0.5">
             {data.label}
           </span>
         </div>
 
         {isFiring && (
-          <div className="absolute -top-2 -right-2 w-5 h-5 rounded-full bg-yellow-300 animate-ping" />
+          <div className="absolute -top-1.5 -right-1.5 w-3.5 h-3.5 rounded-full bg-amber-400 opacity-80" />
         )}
 
         <Handle
           type="target"
           position={Position.Left}
-          style={{ background: '#38bdf8', left: -6, top: '50%' }}
+          style={{ background: '#64748b', left: -5, top: '50%', width: 8, height: 8 }}
         />
         <Handle
           type="source"
           position={Position.Right}
-          style={{ background: '#38bdf8', right: -6, top: '50%' }}
+          style={{ background: '#64748b', right: -5, top: '50%', width: 8, height: 8 }}
         />
       </div>
     </div>

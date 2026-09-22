@@ -32,19 +32,19 @@ export const initialNodes = [
     id: 't1',
     type: 'transition',
     position: { x: 380, y: 240 },
-    data: { label: 'Vérifier & Enregistrer', icon: '🔍' },
+    data: { label: 'Vérifier & Enregistrer'},
   },
   {
     id: 't2',
     type: 'transition',
     position: { x: 700, y: 240 },
-    data: { label: 'Délai 5s puis Rendu', icon: '⏱️' },
+    data: { label: 'Délai 20s puis Rendu'},
   },
   {
     id: 't3',
     type: 'transition',
     position: { x: 1020, y: 240 },
-    data: { label: 'Pénalité Retard', icon: '⚠️' },
+    data: { label: 'Pénalité Retard'},
   },
 
   // ===== ÉTATS INTERMÉDIAIRES =====

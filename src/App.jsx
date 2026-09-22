@@ -23,35 +23,26 @@ const nodeTypes = {
   transition: TransitionNode,
 };
 
-const CONSTRAINTS = {
-  MAX_JETONS_PAR_PLACE: 30,
-};
+// Timing
+const STEP_DURATION_MS = 3000;
+const RENDER_DELAY_MS = 20000;
 
-// 🕐 Timing
-const STEP_DURATION_MS = 3000;   // 1 étape = 3 secondes
-const RENDER_DELAY_MS = 5000;    // Délai avant rendu = 5 secondes
-
-// 📚 Types de livres gérés par l'application
 export const BOOK_TYPES = [
-  { id: 'p1',  label: 'Babou',       color: '#10b981' },
-  { id: 'p1b', label: 'Jésus',       color: '#ef4444' },
+  { id: 'p1', label: 'Babou', color: '#10b981' },
+  { id: 'p1b', label: 'Jésus', color: '#ef4444' },
   { id: 'p1c', label: 'Le Roi Lion', color: '#3b82f6' },
 ];
 
-// 🎯 Configuration par défaut
 const DEFAULT_CONFIG = {
   stock: {
-    p1:  5, // Babou
-    p1b: 3, // Jésus
-    p1c: 4, // Le Roi Lion
+    p1: 5,
+    p1b: 3,
+    p1c: 4,
   },
   nbEmpruntsInitial: 0,
 };
 
 export default function App() {
-  // ─────────────────────────────────────────────
-  // 🔧 State principal
-  // ─────────────────────────────────────────────
   const [nodes, setNodes, onNodesChange] = useNodesState(
     initialNodes.map((n) => {
       const data = { ...n.data };
@@ -75,31 +66,30 @@ export default function App() {
     retards: 0,
   });
 
-  // 🕒 Emprunts en cours (pour le délai de rendu et l'affichage bonus)
-  const activeLoansRef = useRef([]); // [{ loanId, typeId, label, borrowerName, startedAt }]
+  const activeLoansRef = useRef([]);
   const [activeLoans, setActiveLoans] = useState([]);
-
-  // 📋 Demandes en attente avec infos utilisateur
-  const pendingBorrowsRef = useRef([]); // [{ nom, typeId, typeLabel, color }]
-
-  // 🔄 Force re-render toutes les secondes pour les comptes à rebours
+  const pendingReturnsRef = useRef([]);
+  const [pendingReturns, setPendingReturns] = useState([]);
+  const pendingBorrowsRef = useRef([]);
   const [, forceUpdate] = useState(0);
-
   const intervalRef = useRef(null);
   const configRef = useRef(config);
+  const nodesRef = useRef(nodes);
 
-  useEffect(() => { configRef.current = config; }, [config]);
-
-  // ⏱️ Force re-render 1×/s quand il y a des emprunts en cours
   useEffect(() => {
-    if (activeLoans.length === 0) return;
+    configRef.current = config;
+  }, [config]);
+
+  useEffect(() => {
+    nodesRef.current = nodes;
+  }, [nodes]);
+
+  useEffect(() => {
+    if (activeLoans.length === 0 && pendingReturns.length === 0) return;
     const t = setInterval(() => forceUpdate((n) => n + 1), 1000);
     return () => clearInterval(t);
-  }, [activeLoans.length]);
+  }, [activeLoans.length, pendingReturns.length]);
 
-  // ─────────────────────────────────────────────
-  // 📝 Log
-  // ─────────────────────────────────────────────
   const addLog = useCallback((type, message) => {
     const timestamp = new Date().toLocaleTimeString('fr-FR');
     setLogs((prev) =>
@@ -107,245 +97,184 @@ export default function App() {
     );
   }, []);
 
-  // ─────────────────────────────────────────────
-  // 🔴 Arrêt d'urgence
-  // ─────────────────────────────────────────────
-  const stopSimulation = useCallback((reason) => {
-    setRunning(false);
-    setStopped(true);
-    clearInterval(intervalRef.current);
-    addLog('error', `🛑 SIMULATION ARRÊTÉE : ${reason}`);
-  }, [addLog]);
+  const stopSimulation = useCallback(
+    (reason) => {
+      setRunning(false);
+      setStopped(true);
+      clearInterval(intervalRef.current);
+      addLog('error', `SIMULATION ARRÊTÉE : ${reason}`);
+    },
+    [addLog]
+  );
 
-  // ─────────────────────────────────────────────
-  // ➕ Ouvrir le formulaire d'emprunt
-  // ─────────────────────────────────────────────
   const handleOpenBorrowModal = useCallback(() => {
     setShowBorrowModal(true);
   }, []);
 
+  const handleConfirmBorrow = useCallback(
+    (borrowInfo) => {
+      setNodes((current) =>
+        current.map((n) =>
+          n.id === 'p2'
+            ? { ...n, data: { ...n.data, tokens: n.data.tokens + 1 } }
+            : n
+        )
+      );
+      pendingBorrowsRef.current.push(borrowInfo);
+      addLog('info', `Emprunt demandé par « ${borrowInfo.nom} » pour « ${borrowInfo.typeLabel} »`);
+      setShowBorrowModal(false);
+    },
+    [setNodes, addLog]
+  );
+
+  const handleApplyConfig = useCallback(
+    (newCfg) => {
+      setConfig(newCfg);
+      configRef.current = newCfg;
+
+      setNodes((current) =>
+        current.map((n) => {
+          const data = { ...n.data };
+          if (newCfg.stock[n.id] !== undefined) data.tokens = newCfg.stock[n.id];
+          if (n.id === 'p2') data.tokens = 0;
+          if (n.id === 'p3') data.tokens = 0;
+          if (n.id === 'p4') data.tokens = 0;
+          if (n.id === 'p5') data.tokens = 0;
+          if (n.id === 'p6') data.tokens = 0;
+          return { ...n, data };
+        })
+      );
+
+      activeLoansRef.current = [];
+      pendingBorrowsRef.current = [];
+      pendingReturnsRef.current = [];
+      setActiveLoans([]);
+      setPendingReturns([]);
+      setStats({ empruntsReussis: 0, refusStock: 0, retoursTraites: 0, retards: 0 });
+      setRunning(false);
+      setStopped(false);
+      setLogs([]);
+      setShowConfig(false);
+      addLog('success', 'Configuration appliquée');
+    },
+    [setNodes, addLog]
+  );
+
   // ─────────────────────────────────────────────
-  // ✅ Confirmer un emprunt depuis la modale
-  // ─────────────────────────────────────────────
-  const handleConfirmBorrow = useCallback((borrowInfo) => {
-    // Ajouter 1 jeton à la place "Demandes en attente"
-    setNodes((current) =>
-      current.map((n) =>
-        n.id === 'p2'
-          ? { ...n, data: { ...n.data, tokens: n.data.tokens + 1 } }
-          : n
-      )
-    );
-
-    // Stocker les infos de la demande dans la file
-    pendingBorrowsRef.current.push(borrowInfo);
-
-    addLog(
-      'info',
-      `➕ Emprunt demandé par "${borrowInfo.nom}" pour « ${borrowInfo.typeLabel} »`
-    );
-    setShowBorrowModal(false);
-  }, [setNodes, addLog]);
-
-  // ─────────────────────────────────────────────
-  // 💾 Appliquer la configuration
-  // ─────────────────────────────────────────────
-  const handleApplyConfig = useCallback((newCfg) => {
-    setConfig(newCfg);
-    configRef.current = newCfg;
-
-    setNodes((current) =>
-      current.map((n) => {
-        const data = { ...n.data };
-        if (newCfg.stock[n.id] !== undefined) data.tokens = newCfg.stock[n.id];
-        if (n.id === 'p2') data.tokens = 0;
-        if (n.id === 'p3') data.tokens = 0;
-        if (n.id === 'p4') data.tokens = 0;
-        if (n.id === 'p5') data.tokens = 0;
-        if (n.id === 'p6') data.tokens = 0;
-        return { ...n, data };
-      })
-    );
-
-    activeLoansRef.current = [];
-    pendingBorrowsRef.current = [];
-    setActiveLoans([]);
-    setStats({ empruntsReussis: 0, refusStock: 0, retoursTraites: 0, retards: 0 });
-    setRunning(false);
-    setStopped(false);
-    setLogs([]);
-    setShowConfig(false);
-    addLog('success', `✅ Configuration appliquée`);
-  }, [setNodes, addLog]);
-const nodesRef = useRef(nodes);
-
-  useEffect(() => {
-    nodesRef.current = nodes;
-  }, [nodes]);
-  // ─────────────────────────────────────────────
-  // 🔥 Une étape de simulation
+  // Une étape de simulation (conforme RdP + extension temporisée)
   // ─────────────────────────────────────────────
   const simulateStep = useCallback(() => {
-  const now = Date.now();
-  const cfg = configRef.current;
-  const currentNodes = nodesRef.current;
+    const now = Date.now();
+    const cfg = configRef.current;
+    const currentNodes = nodesRef.current;
 
-  // Copie profonde du marquage
-  const newNodes = currentNodes.map((n) => ({
-    ...n,
-    data: { ...n.data },
-  }));
+    const newNodes = currentNodes.map((n) => ({
+      ...n,
+      data: { ...n.data },
+    }));
 
-  const getPlace = (id) => newNodes.find((n) => n.id === id);
+    const getPlace = (id) => newNodes.find((n) => n.id === id);
 
-  const stocks = {
-    p1:  getPlace('p1'),
-    p1b: getPlace('p1b'),
-    p1c: getPlace('p1c'),
-  };
-  const p2 = getPlace('p2');
-  const p3 = getPlace('p3');
-  const p4 = getPlace('p4');
-  const p5 = getPlace('p5');
-  const p6 = getPlace('p6');
+    const stocks = {
+      p1: getPlace('p1'),
+      p1b: getPlace('p1b'),
+      p1c: getPlace('p1c'),
+    };
+    const p2 = getPlace('p2');
+    const p3 = getPlace('p3');
+    const p4 = getPlace('p4');
+    const p5 = getPlace('p5');
+    const p6 = getPlace('p6');
 
-  const logsToAdd = [];
-  let stoppedReason = null;
+    const logsToAdd = [];
+    let stoppedReason = null;
 
-  // ─────────────────────────────────────────────
-  // ⏱️ TIR DE t2 : transition temporisée (délai 5s)
-  // Condition d’activation : p3 ≥ 1 et âge du jeton ≥ 5s
-  // ─────────────────────────────────────────────
-  const stillActive = [];
-  for (const loan of activeLoansRef.current) {
-    const elapsed = now - loan.startedAt;
+    // ── Tir de t2 (transition temporisée) ──
+    // Après 20s: déplacer vers p4 (Rendu en attente) sans rendre
+    const stillActive = [];
+    for (const loan of activeLoansRef.current) {
+      const elapsed = now - loan.startedAt;
 
-    if (elapsed >= RENDER_DELAY_MS) {
-      // === TIR DE t2 ===
-      // 1. Consommer 1 jeton de p3 (fait via la liste)
-      // 2. Produire 1 jeton dans p6 (livre rendu)
-      if (p6) p6.data.tokens += 1;
-
-      // 3. Remettre le livre dans son stock d’origine (conservation des ressources)
-      const stock = stocks[loan.typeId];
-      if (stock) stock.data.tokens += 1;
-
-      setStats((s) => ({ ...s, retoursTraites: s.retoursTraites + 1 }));
-      logsToAdd.push([
-        'success',
-        `✅ t2 tirée : "${loan.borrowerName}" a rendu « ${loan.label} » → stock restauré`,
-      ]);
-
-      // Branche probabiliste vers p4 (retard) – extension acceptable
-      if (Math.random() < 0.3 && p4) {
-        p4.data.tokens += 1;
-        logsToAdd.push(['warn', `⏰ Retard détecté → jeton produit dans p4`]);
-      }
-    } else {
-      stillActive.push(loan);
-    }
-  }
-  activeLoansRef.current = stillActive;
-  if (p3) p3.data.tokens = stillActive.length; // synchronisation du marquage
-
-  // ─────────────────────────────────────────────
-  // 🔍 TIR DE t1 : Vérifier & Enregistrer
-  // Condition d’activation :
-  //   p2 ≥ 1  ET  (p1 ≥ 1 OU p1b ≥ 1 OU p1c ≥ 1)
-  // ─────────────────────────────────────────────
-  if (p2 && p2.data.tokens > 0) {
-    const pendingBorrow = pendingBorrowsRef.current.shift();
-
-    if (!pendingBorrow) {
-      // Désynchronisation → on corrige le marquage
-      p2.data.tokens = 0;
-    } else {
-      // Recherche d’un stock disponible (garde colorée)
-      let chosen = null;
-      if (pendingBorrow.typeId && stocks[pendingBorrow.typeId]?.data.tokens > 0) {
-        chosen = BOOK_TYPES.find((bt) => bt.id === pendingBorrow.typeId);
+      if (elapsed >= RENDER_DELAY_MS) {
+        // Déplacer vers rendu en attente (p4)
+        if (p4) p4.data.tokens += 1;
+        pendingReturnsRef.current.push(loan);
+        logsToAdd.push([
+          'warn',
+          `« ${loan.borrowerName} » a dépassé le délai de 20s → placé en attente de rendu (p4)`,
+        ]);
       } else {
-        // Si le type demandé est épuisé, on peut choisir un autre (politique)
-        const disponibles = BOOK_TYPES.filter((bt) => stocks[bt.id]?.data.tokens > 0);
-        if (disponibles.length > 0) {
-          chosen = disponibles[Math.floor(Math.random() * disponibles.length)];
+        stillActive.push(loan);
+      }
+    }
+    activeLoansRef.current = stillActive;
+    if (p3) p3.data.tokens = stillActive.length;
+
+    // ── Tir de t1 ──
+    // Condition : p2 ≥ 1 et stock du type demandé ≥ 1
+    // Si le type demandé est épuisé → refus + ARRÊT de la simulation (contrainte)
+    if (p2 && p2.data.tokens > 0) {
+      const pendingBorrow = pendingBorrowsRef.current.shift();
+
+      if (!pendingBorrow) {
+        p2.data.tokens = 0;
+      } else {
+        const requestedStock = stocks[pendingBorrow.typeId];
+        const hasRequestedStock = requestedStock && requestedStock.data.tokens > 0;
+
+        if (!hasRequestedStock) {
+          // Stock insuffisant : la demande reste en attente dans p2
+          // On remet la demande à la fin de la file d'attente
+          pendingBorrowsRef.current.push(pendingBorrow);
+          setStats((s) => ({ ...s, refusStock: s.refusStock + 1 }));
+          logsToAdd.push([
+            'warn',
+            `Stock insuffisant pour « ${pendingBorrow.typeLabel} ». La demande de « ${pendingBorrow.nom} » reste en attente.`,
+          ]);
+        } else {
+          // Tir atomique de t1
+          const chosen = BOOK_TYPES.find((bt) => bt.id === pendingBorrow.typeId);
+          p2.data.tokens -= 1;
+          requestedStock.data.tokens -= 1;
+
+          const newLoan = {
+            loanId: Date.now() + Math.random(),
+            typeId: chosen.id,
+            label: chosen.label,
+            borrowerName: pendingBorrow.nom,
+            startedAt: now,
+          };
+          activeLoansRef.current.push(newLoan);
+          if (p3) p3.data.tokens = activeLoansRef.current.length;
+
+          setStats((s) => ({ ...s, empruntsReussis: s.empruntsReussis + 1 }));
+          logsToAdd.push([
+            'success',
+            `t1 tirée : « ${pendingBorrow.nom} » → « ${chosen.label} » (stock restant : ${requestedStock.data.tokens})`,
+          ]);
+          logsToAdd.push(['info', `Jeton placé dans p3 – rendu prévu dans ${RENDER_DELAY_MS / 1000} s`]);
         }
       }
-
-      if (!chosen) {
-        // Transition non activable → refus
-        setStats((s) => ({ ...s, refusStock: s.refusStock + 1 }));
-        logsToAdd.push([
-          'error',
-          `❌ t1 non activable : aucun stock pour "${pendingBorrow.nom}" (« ${pendingBorrow.typeLabel} »)`,
-        ]);
-        p2.data.tokens -= 1; // on retire la demande (ou on la laisse selon la politique)
-      } else {
-        // === TIR DE t1 ===
-        // Consommation
-        p2.data.tokens -= 1;
-        stocks[chosen.id].data.tokens -= 1;
-
-        // Production
-        const newLoan = {
-          loanId: Date.now() + Math.random(),
-          typeId: chosen.id,
-          label: chosen.label,
-          borrowerName: pendingBorrow.nom,
-          startedAt: now,
-        };
-        activeLoansRef.current.push(newLoan);
-        if (p3) p3.data.tokens = activeLoansRef.current.length;
-
-        setStats((s) => ({ ...s, empruntsReussis: s.empruntsReussis + 1 }));
-        logsToAdd.push([
-          'success',
-          `📝 t1 tirée : "${pendingBorrow.nom}" → « ${chosen.label} » (stock restant : ${stocks[chosen.id].data.tokens})`,
-        ]);
-        logsToAdd.push(['info', `⏱️ Jeton placé dans p3 – rendu prévu dans 5s`]);
-      }
     }
-  }
 
-  // ─────────────────────────────────────────────
-  // ⚠️ TIR DE t3 : Pénalité
-  // Condition : p4 ≥ 1
-  // ─────────────────────────────────────────────
-  if (p4 && p5 && p4.data.tokens > 0) {
-    p4.data.tokens -= 1;
-    p5.data.tokens += 1;
-    setStats((s) => ({ ...s, retards: s.retards + 1 }));
-    logsToAdd.push(['warn', `⚠️ t3 tirée → amende (total : ${p5.data.tokens})`]);
-  }
+    // ── Tir de t3 ──
+    // SUPPRIMÉ : t3 est maintenant tirée uniquement manuellement via handleManualReturn
+    // quand l'utilisateur clique sur "Rendre" depuis la liste d'attente (p4)
 
-  // ─────────────────────────────────────────────
-  // Condition de terminaison (marquage final)
-  // ─────────────────────────────────────────────
-  const totalDemandes = p2?.data.tokens || 0;
-  const totalActifs   = activeLoansRef.current.length;
-  const totalRetards  = p4?.data.tokens || 0;
+    // Condition de terminaison
+    // SUPPRIMÉ : La simulation ne s'arrête plus automatiquement quand tous les livres sont rendus
+    // L'utilisateur peut continuer à ajouter de nouveaux emprunts
 
-  if (totalDemandes === 0 && totalActifs === 0 && totalRetards === 0) {
-    const stockTotal = BOOK_TYPES.reduce((sum, bt) => sum + (stocks[bt.id]?.data.tokens || 0), 0);
-    const stockInitial = Object.values(cfg.stock).reduce((a, b) => a + b, 0);
-    if (stockTotal === stockInitial) {
-      stoppedReason = 'Simulation terminée : tous les livres sont revenus en rayon ✓';
+    setNodes(newNodes);
+    setActiveLoans([...activeLoansRef.current]);
+    setPendingReturns([...pendingReturnsRef.current]);
+    logsToAdd.forEach(([type, msg]) => addLog(type, msg));
+
+    if (stoppedReason) {
+      stopSimulation(stoppedReason);
     }
-  }
+  }, [setNodes, addLog, stopSimulation]);
 
-  // Application atomique du nouveau marquage
-  setNodes(newNodes);
-  setActiveLoans([...activeLoansRef.current]);
-  logsToAdd.forEach(([type, msg]) => addLog(type, msg));
-
-  if (stoppedReason) {
-    stopSimulation(stoppedReason);
-  }
-}, [setNodes, addLog, stopSimulation]);
-
-  // ─────────────────────────────────────────────
-  // ⏱️ Intervalle : 1 étape toutes les 3 secondes
-  // ─────────────────────────────────────────────
   useEffect(() => {
     if (running && !stopped) {
       intervalRef.current = setInterval(simulateStep, STEP_DURATION_MS);
@@ -355,16 +284,15 @@ const nodesRef = useRef(nodes);
     return () => clearInterval(intervalRef.current);
   }, [running, stopped, simulateStep]);
 
-  // ─────────────────────────────────────────────
-  // 🔄 Reset
-  // ─────────────────────────────────────────────
   const handleReset = useCallback(() => {
     setRunning(false);
     setStopped(false);
     setLogs([]);
     activeLoansRef.current = [];
     pendingBorrowsRef.current = [];
+    pendingReturnsRef.current = [];
     setActiveLoans([]);
+    setPendingReturns([]);
     setStats({ empruntsReussis: 0, refusStock: 0, retoursTraites: 0, retards: 0 });
     setNodes(
       initialNodes.map((n) => {
@@ -375,14 +303,91 @@ const nodesRef = useRef(nodes);
       })
     );
     setEdges(initialEdges.map((e) => ({ ...e })));
-    addLog('info', '🔄 Simulation réinitialisée');
+    addLog('info', 'Simulation réinitialisée');
   }, [setNodes, setEdges, config, addLog]);
 
   // ─────────────────────────────────────────────
-  // 📊 Mémoïsations
+  // Rendu manuel d'un emprunt (bouton utilisateur)
+  // Détermine automatiquement si c'est un retard (>20s) ou non
   // ─────────────────────────────────────────────
+  const handleManualReturn = useCallback(
+    (loanId) => {
+      // Chercher dans les deux listes
+      const loan = activeLoansRef.current.find((l) => l.loanId === loanId) ||
+                   pendingReturnsRef.current.find((l) => l.loanId === loanId);
+      if (!loan) return;
+
+      const elapsed = Date.now() - loan.startedAt;
+      const isLate = elapsed >= RENDER_DELAY_MS;
+      const fromPending = pendingReturnsRef.current.some((l) => l.loanId === loanId);
+
+      setNodes((current) => {
+        const newNodes = current.map((n) => ({ ...n, data: { ...n.data } }));
+        const getPlace = (id) => newNodes.find((n) => n.id === id);
+
+        const stock = getPlace(loan.typeId);
+        const p3 = getPlace('p3');
+        const p4 = getPlace('p4');
+        const p5 = getPlace('p5');
+        const p6 = getPlace('p6');
+
+        if (isLate) {
+          // Rendu avec retard → pénalité (t3)
+          if (p4) p4.data.tokens -= 1;
+          if (p5) p5.data.tokens += 1;
+          
+          // Remise en stock + production p6
+          if (stock) stock.data.tokens += 1;
+          if (p6) p6.data.tokens += 1;
+
+          // Retirer de la liste appropriée
+          if (fromPending) {
+            pendingReturnsRef.current = pendingReturnsRef.current.filter((l) => l.loanId !== loanId);
+          } else {
+            activeLoansRef.current = activeLoansRef.current.filter((l) => l.loanId !== loanId);
+            if (p3) p3.data.tokens = activeLoansRef.current.length;
+          }
+
+          setStats((s) => ({
+            ...s,
+            retoursTraites: s.retoursTraites + 1,
+            retards: s.retards + 1,
+          }));
+          addLog(
+            'warn',
+            `Rendu avec pénalité : « ${loan.borrowerName} » a rendu « ${loan.label} » (amende appliquée)`
+          );
+        } else {
+          // Rendu normal (avant 20s)
+          // Remise en stock + production p6
+          if (stock) stock.data.tokens += 1;
+          if (p6) p6.data.tokens += 1;
+
+          // Retirer de la liste des emprunts actifs
+          activeLoansRef.current = activeLoansRef.current.filter((l) => l.loanId !== loanId);
+          if (p3) p3.data.tokens = activeLoansRef.current.length;
+
+          setStats((s) => ({ ...s, retoursTraites: s.retoursTraites + 1 }));
+          addLog(
+            'success',
+            `Rendu normal : « ${loan.borrowerName} » a rendu « ${loan.label} » → stock restauré`
+          );
+        }
+
+        return newNodes;
+      });
+
+      setActiveLoans([...activeLoansRef.current]);
+      setPendingReturns([...pendingReturnsRef.current]);
+    },
+    [setNodes, addLog]
+  );
+
   const totalTokens = useMemo(
-    () => nodes.filter((n) => n.type === 'place').reduce((sum, n) => sum + (n.data.tokens || 0), 0),
+    () =>
+      nodes
+        .filter((n) => n.type === 'place')
+        .reduce((sum, n) => sum + (n.data.tokens || 0), 0),
     [nodes]
   );
 
@@ -394,18 +399,14 @@ const nodesRef = useRef(nodes);
   }, [nodes]);
 
   const logColors = {
-    success: 'text-emerald-400 border-emerald-500/40 bg-emerald-500/10',
-    error: 'text-red-400 border-red-500/40 bg-red-500/10',
-    warn: 'text-orange-400 border-orange-500/40 bg-orange-500/10',
-    info: 'text-slate-300 border-slate-600/40 bg-slate-700/20',
+    success: 'text-emerald-400 border-emerald-800/50 bg-emerald-950/30',
+    error: 'text-rose-400 border-rose-800/50 bg-rose-950/30',
+    warn: 'text-amber-400 border-amber-800/50 bg-amber-950/30',
+    info: 'text-slate-300 border-slate-700/50 bg-slate-800/40',
   };
 
-  // ─────────────────────────────────────────────
-  // 🎨 Rendu
-  // ─────────────────────────────────────────────
   return (
     <div className="w-screen h-screen relative bg-slate-950">
-      {/* ✅ Graphe en premier */}
       <ReactFlow
         nodes={nodes}
         edges={edges}
@@ -416,18 +417,17 @@ const nodesRef = useRef(nodes);
         fitView
         fitViewOptions={{ padding: 0.2 }}
         proOptions={{ hideAttribution: true }}
-        defaultEdgeOptions={{ animated: true, style: { strokeWidth: 2.5 } }}
+        defaultEdgeOptions={{ animated: true, style: { strokeWidth: 2 } }}
       >
-        <Background variant={BackgroundVariant.Dots} gap={24} size={1.5} color="#334155" />
+        <Background variant={BackgroundVariant.Dots} gap={24} size={1.2} color="#334155" />
         <Controls position="bottom-right" />
         <MiniMap
-          nodeColor={(n) => n.data?.color || '#38bdf8'}
-          maskColor="rgba(15, 23, 42, 0.8)"
+          nodeColor={(n) => n.data?.color || '#64748b'}
+          maskColor="rgba(15, 23, 42, 0.85)"
           position="bottom-left"
         />
       </ReactFlow>
 
-      {/* Toolbar principale */}
       <Toolbar
         onSimulate={() => setRunning((r) => !r)}
         onReset={handleReset}
@@ -444,30 +444,29 @@ const nodesRef = useRef(nodes);
         renderDelay={RENDER_DELAY_MS / 1000}
       />
 
-      {/* 📡 Journal temps réel */}
-      <div className="absolute top-4 right-4 z-10 w-[360px] max-h-[60vh] flex flex-col
-                      bg-slate-800/80 backdrop-blur-lg rounded-2xl border border-slate-700 shadow-2xl overflow-hidden">
-        <div className="px-4 py-3 border-b border-slate-700 flex items-center justify-between">
-          <h2 className="text-white font-bold text-sm flex items-center gap-2">
-            📡 Journal Temps Réel
-          </h2>
-          <span className="text-xs text-slate-400">{logs.length}</span>
+      {/* Journal */}
+      <div
+        className="absolute top-4 right-4 z-10 w-[340px] max-h-[55vh] flex flex-col
+                      bg-slate-800/90 backdrop-blur-md rounded-xl border border-slate-700 shadow-xl overflow-hidden"
+      >
+        <div className="px-4 py-2.5 border-b border-slate-700 flex items-center justify-between">
+          <h2 className="text-white font-medium text-sm">Journal</h2>
+          <span className="text-xs text-slate-500 tabular-nums">{logs.length}</span>
         </div>
-        <div className="flex-1 overflow-y-auto p-2 space-y-1.5">
+        <div className="flex-1 overflow-y-auto p-2 space-y-1">
           {logs.length === 0 && (
-            <p className="text-slate-500 text-xs text-center py-6">
+            <p className="text-slate-500 text-xs text-center py-8">
               Aucun événement — lancez la simulation
             </p>
           )}
           {logs.map((log) => (
             <div
               key={log.id}
-              className={`text-xs px-3 py-2 rounded-lg border transition-all duration-300
-                         ${logColors[log.type] || logColors.info}`}
+              className={`text-xs px-2.5 py-1.5 rounded-lg border ${logColors[log.type] || logColors.info}`}
             >
               <div className="flex items-center justify-between mb-0.5">
-                <span className="font-bold uppercase text-[10px] opacity-70">{log.type}</span>
-                <span className="text-[10px] opacity-60">{log.timestamp}</span>
+                <span className="font-medium uppercase text-[10px] opacity-70">{log.type}</span>
+                <span className="text-[10px] opacity-50 tabular-nums">{log.timestamp}</span>
               </div>
               <div className="leading-snug">{log.message}</div>
             </div>
@@ -475,64 +474,77 @@ const nodesRef = useRef(nodes);
         </div>
       </div>
 
-      {/* 📚 BONUS : Emprunts en cours avec compte à rebours */}
-      {activeLoans.length > 0 && (
-        <div className="absolute bottom-24 right-4 z-10 w-[360px] max-h-[280px] flex flex-col
-                        bg-slate-800/80 backdrop-blur-lg rounded-2xl border border-slate-700 shadow-2xl overflow-hidden">
+      {/* Emprunts en cours et rendus en attente - tableau unique */}
+      {(activeLoans.length > 0 || pendingReturns.length > 0) && (
+        <div
+          className="absolute bottom-20 right-4 z-10 w-[420px] max-h-[350px] flex flex-col
+                        bg-slate-800/90 backdrop-blur-md rounded-xl border border-slate-700 shadow-xl overflow-hidden"
+        >
           <div className="px-4 py-2 border-b border-slate-700 flex items-center justify-between">
-            <h3 className="text-white font-bold text-xs flex items-center gap-2">
-              📚 Emprunts en cours
-            </h3>
-            <span className="text-xs font-bold text-orange-400">
-              {activeLoans.length}
+            <h3 className="text-white font-medium text-xs">Emprunts</h3>
+            <span className="text-xs font-medium text-amber-400 tabular-nums">
+              {activeLoans.length + pendingReturns.length}
             </span>
           </div>
-          <div className="p-2 space-y-1.5 max-h-[220px] overflow-y-auto">
-            {activeLoans.map((loan) => {
-              const elapsed = Math.floor((Date.now() - loan.startedAt) / 1000);
-              const remaining = Math.max(0, RENDER_DELAY_MS / 1000 - elapsed);
-              const progress = Math.min(100, (elapsed / (RENDER_DELAY_MS / 1000)) * 100);
-              const bookType = BOOK_TYPES.find((bt) => bt.id === loan.typeId);
+          <div className="p-2 max-h-[300px] overflow-y-auto">
+            <table className="w-full text-xs">
+              <thead>
+                <tr className="text-slate-500 text-[10px] uppercase tracking-wider border-b border-slate-700/50">
+                  <th className="text-left py-1.5 px-2">Emprunteur</th>
+                  <th className="text-left py-1.5 px-2">Livre</th>
+                  <th className="text-center py-1.5 px-2">Durée</th>
+                  <th className="text-center py-1.5 px-2">Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {[...activeLoans, ...pendingReturns].map((loan) => {
+                  const elapsed = Math.floor((Date.now() - loan.startedAt) / 1000);
+                  const isLate = elapsed >= (RENDER_DELAY_MS / 1000);
+                  const bookType = BOOK_TYPES.find((bt) => bt.id === loan.typeId);
 
-              return (
-                <div
-                  key={loan.loanId}
-                  className="px-3 py-2 rounded-lg bg-slate-900/60 border border-slate-700 text-xs"
-                >
-                  <div className="flex justify-between items-center mb-1.5">
-                    <span className="text-slate-300 font-semibold truncate">
-                      👤 {loan.borrowerName}
-                    </span>
-                    <span
-                      className="font-bold flex-shrink-0 ml-2"
-                      style={{ color: bookType?.color }}
+                  return (
+                    <tr
+                      key={loan.loanId}
+                      className="border-b border-slate-700/30 hover:bg-slate-700/30"
                     >
-                      {loan.label}
-                    </span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <div className="flex-1 h-1.5 bg-slate-700 rounded-full overflow-hidden">
-                      <div
-                        className="h-full rounded-full transition-all duration-500"
-                        style={{
-                          width: `${progress}%`,
-                          background: bookType?.color,
-                          boxShadow: `0 0 6px ${bookType?.color}`,
-                        }}
-                      />
-                    </div>
-                    <span className="text-slate-400 font-mono text-[10px] w-8 text-right">
-                      {remaining}s
-                    </span>
-                  </div>
-                </div>
-              );
-            })}
+                      <td className="py-2 px-2 text-slate-300 font-medium truncate max-w-[100px]">
+                        {loan.borrowerName}
+                      </td>
+                      <td className="py-2 px-2">
+                        <span
+                          className="font-medium"
+                          style={{ color: bookType?.color }}
+                        >
+                          {loan.label}
+                        </span>
+                      </td>
+                      <td className="py-2 px-2 text-center font-mono">
+                        <span className={isLate ? 'text-amber-400' : 'text-slate-400'}>
+                          {isLate ? `+${elapsed - (RENDER_DELAY_MS / 1000)}s` : `${elapsed}s`}
+                        </span>
+                      </td>
+                      <td className="py-2 px-2">
+                        <div className="flex gap-1 justify-center">
+                          <button
+                            onClick={() => handleManualReturn(loan.loanId)}
+                            className="px-2 py-1 rounded text-[10px] font-medium
+                                       bg-emerald-800/60 text-emerald-300 border border-emerald-700/50
+                                       hover:bg-emerald-700/70 transition-colors"
+                            title="Rendre le livre"
+                          >
+                            Rendre
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
           </div>
         </div>
       )}
 
-      {/* ⚙️ Panneau de configuration escamotable */}
       {showConfig && (
         <ConfigPanel
           initialConfig={config}
@@ -542,7 +554,6 @@ const nodesRef = useRef(nodes);
         />
       )}
 
-      {/* 📝 Modale d'emprunt */}
       {showBorrowModal && (
         <BorrowModal
           bookTypes={BOOK_TYPES}
@@ -554,16 +565,10 @@ const nodesRef = useRef(nodes);
 
       {/* Barre inférieure */}
       <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-10">
-        <div className="bg-slate-800/80 backdrop-blur-lg px-5 py-2 rounded-full border border-slate-700 shadow-2xl flex items-center gap-4 text-xs text-slate-300">
-          <span className="flex items-center gap-2">
-            <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-            Étape : {STEP_DURATION_MS / 1000}s
-          </span>
+        <div className="bg-slate-800/90 backdrop-blur-md px-4 py-1.5 rounded-full border border-slate-700 shadow-lg flex items-center gap-3 text-[11px] text-slate-400">
+          <span>Étape : {STEP_DURATION_MS / 1000}s</span>
           <span className="text-slate-600">|</span>
-          <span className="flex items-center gap-2">
-            <span className="w-2 h-2 rounded-full bg-orange-400 animate-pulse" />
-            Rendu : {RENDER_DELAY_MS / 1000}s
-          </span>
+          <span>Rendu : {RENDER_DELAY_MS / 1000}s</span>
           <span className="text-slate-600">|</span>
           <span>Molette = Zoom</span>
         </div>
