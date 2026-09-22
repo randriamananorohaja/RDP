@@ -58,6 +58,9 @@ export default function App() {
   const [config, setConfig] = useState(DEFAULT_CONFIG);
   const [showConfig, setShowConfig] = useState(false);
   const [showBorrowModal, setShowBorrowModal] = useState(false);
+  const [showToolbar, setShowToolbar] = useState(true);
+  const [showJournal, setShowJournal] = useState(true);
+  const [showLoansTable, setShowLoansTable] = useState(true);
   const [logs, setLogs] = useState([]);
   const [stats, setStats] = useState({
     empruntsReussis: 0,
@@ -431,54 +434,56 @@ export default function App() {
         />
       </ReactFlow>
 
-      <Toolbar
-        onSimulate={() => setRunning((r) => !r)}
-        onReset={handleReset}
-        onReconfigure={() => setShowConfig(true)}
-        onAddEmprunt={handleOpenBorrowModal}
-        running={running}
-        stopped={stopped}
-        tokens={totalTokens}
-        contraintes={stats}
-        stockInfo={stockInfo}
-        enAttente={nodes.find((n) => n.id === 'p2')?.data.tokens || 0}
-        empruntsEnCours={activeLoans.length}
-        stepDuration={STEP_DURATION_MS / 1000}
-        renderDelay={RENDER_DELAY_MS / 1000}
-      />
+      {showToolbar && (
+        <Toolbar
+          onSimulate={() => setRunning((r) => !r)}
+          onReset={handleReset}
+          onReconfigure={() => setShowConfig(true)}
+          onAddEmprunt={handleOpenBorrowModal}
+          running={running}
+          stopped={stopped}
+          tokens={totalTokens}
+          contraintes={stats}
+          stockInfo={stockInfo}
+          enAttente={nodes.find((n) => n.id === 'p2')?.data.tokens || 0}
+          empruntsEnCours={activeLoans.length}
+          stepDuration={STEP_DURATION_MS / 1000}
+          renderDelay={RENDER_DELAY_MS / 1000}
+        />
+      )}
 
-      {/* Journal */}
-      <div
-        className="absolute top-4 right-2 md:right-4 z-10 w-[calc(100vw-16px)] md:w-[340px] max-h-[40vh] md:max-h-[55vh] flex flex-col
-                      bg-slate-800/90 backdrop-blur-md rounded-xl border border-slate-700 shadow-xl overflow-hidden"
-      >
-        <div className="px-3 md:px-4 py-2 border-b border-slate-700 flex items-center justify-between">
-          <h2 className="text-white font-medium text-[10px] md:text-xs">Journal</h2>
-          <span className="text-[9px] md:text-xs text-slate-500 tabular-nums">{logs.length}</span>
-        </div>
-        <div className="flex-1 overflow-y-auto p-1.5 md:p-2 space-y-1">
-          {logs.length === 0 && (
-            <p className="text-slate-500 text-[9px] md:text-xs text-center py-6 md:py-8">
-              Aucun événement — lancez la simulation
-            </p>
-          )}
-          {logs.map((log) => (
-            <div
-              key={log.id}
-              className={`text-[9px] md:text-xs px-1.5 md:px-2.5 py-1 md:py-1.5 rounded-lg border ${logColors[log.type] || logColors.info}`}
-            >
-              <div className="flex items-center justify-between mb-0.5">
-                <span className="font-medium uppercase text-[9px] md:text-[10px] opacity-70">{log.type}</span>
-                <span className="text-[9px] md:text-[10px] opacity-50 tabular-nums">{log.timestamp}</span>
+      {showJournal && (
+        <div
+          className="absolute top-4 right-2 md:right-4 z-10 w-[calc(100vw-16px)] md:w-[340px] max-h-[40vh] md:max-h-[55vh] flex flex-col
+                        bg-slate-800/90 backdrop-blur-md rounded-xl border border-slate-700 shadow-xl overflow-hidden"
+        >
+          <div className="px-3 md:px-4 py-2 border-b border-slate-700 flex items-center justify-between">
+            <h2 className="text-white font-medium text-[10px] md:text-xs">Journal</h2>
+            <span className="text-[9px] md:text-xs text-slate-500 tabular-nums">{logs.length}</span>
+          </div>
+          <div className="flex-1 overflow-y-auto p-1.5 md:p-2 space-y-1">
+            {logs.length === 0 && (
+              <p className="text-slate-500 text-[9px] md:text-xs text-center py-6 md:py-8">
+                Aucun événement — lancez la simulation
+              </p>
+            )}
+            {logs.map((log) => (
+              <div
+                key={log.id}
+                className={`text-[9px] md:text-xs px-1.5 md:px-2.5 py-1 md:py-1.5 rounded-lg border ${logColors[log.type] || logColors.info}`}
+              >
+                <div className="flex items-center justify-between mb-0.5">
+                  <span className="font-medium uppercase text-[9px] md:text-[10px] opacity-70">{log.type}</span>
+                  <span className="text-[9px] md:text-[10px] opacity-50 tabular-nums">{log.timestamp}</span>
+                </div>
+                <div className="leading-snug text-[9px] md:text-xs">{log.message}</div>
               </div>
-              <div className="leading-snug text-[9px] md:text-xs">{log.message}</div>
-            </div>
-          ))}
+            ))}
+          </div>
         </div>
-      </div>
+      )}
 
-      {/* Emprunts en cours et rendus en attente - tableau unique */}
-      {(activeLoans.length > 0 || pendingReturns.length > 0) && (
+      {showLoansTable && (activeLoans.length > 0 || pendingReturns.length > 0) && (
         <div
           className="absolute bottom-16 md:bottom-20 right-2 md:right-4 z-10 w-[calc(100vw-16px)] md:w-[420px] max-h-[40vh] md:max-h-[350px] flex flex-col
                         bg-slate-800/90 backdrop-blur-md rounded-xl border border-slate-700 shadow-xl overflow-hidden"
@@ -574,6 +579,34 @@ export default function App() {
           <span>Rendu : {RENDER_DELAY_MS / 1000}s</span>
           <span className="hidden md:inline text-slate-600">|</span>
           <span className="hidden md:inline">Molette = Zoom</span>
+          <span className="text-slate-600">|</span>
+          <button
+            onClick={() => setShowToolbar(!showToolbar)}
+            className={`px-2 py-0.5 rounded text-[9px] md:text-[10px] font-medium transition-colors ${
+              showToolbar ? 'bg-cyan-700/50 text-cyan-300' : 'bg-slate-700 text-slate-400'
+            }`}
+            title="Afficher/Masquer Toolbar"
+          >
+            Toolbar
+          </button>
+          <button
+            onClick={() => setShowJournal(!showJournal)}
+            className={`px-2 py-0.5 rounded text-[9px] md:text-[10px] font-medium transition-colors ${
+              showJournal ? 'bg-cyan-700/50 text-cyan-300' : 'bg-slate-700 text-slate-400'
+            }`}
+            title="Afficher/Masquer Journal"
+          >
+            Journal
+          </button>
+          <button
+            onClick={() => setShowLoansTable(!showLoansTable)}
+            className={`px-2 py-0.5 rounded text-[9px] md:text-[10px] font-medium transition-colors ${
+              showLoansTable ? 'bg-cyan-700/50 text-cyan-300' : 'bg-slate-700 text-slate-400'
+            }`}
+            title="Afficher/Masquer Tableau"
+          >
+            Tableau
+          </button>
         </div>
       </div>
     </div>
