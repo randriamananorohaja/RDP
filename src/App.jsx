@@ -415,16 +415,19 @@ export default function App() {
         onConnect={(params) => setEdges((eds) => addEdge({ ...params, animated: true }, eds))}
         nodeTypes={nodeTypes}
         fitView
-        fitViewOptions={{ padding: 0.2 }}
+        fitViewOptions={{ padding: 0.1 }}
         proOptions={{ hideAttribution: true }}
-        defaultEdgeOptions={{ animated: true, style: { strokeWidth: 2 } }}
+        defaultEdgeOptions={{ animated: true, style: { strokeWidth: 1.5 } }}
+        minZoom={0.3}
+        maxZoom={1.5}
       >
-        <Background variant={BackgroundVariant.Dots} gap={24} size={1.2} color="#334155" />
-        <Controls position="bottom-right" />
+        <Background variant={BackgroundVariant.Dots} gap={16} size={1} color="#334155" />
+        <Controls position="bottom-right" className="!bottom-16 md:!bottom-4" />
         <MiniMap
           nodeColor={(n) => n.data?.color || '#64748b'}
           maskColor="rgba(15, 23, 42, 0.85)"
           position="bottom-left"
+          className="!bottom-16 md:!bottom-4"
         />
       </ReactFlow>
 
@@ -446,29 +449,29 @@ export default function App() {
 
       {/* Journal */}
       <div
-        className="absolute top-4 right-4 z-10 w-[340px] max-h-[55vh] flex flex-col
+        className="absolute top-4 right-2 md:right-4 z-10 w-[calc(100vw-16px)] md:w-[340px] max-h-[40vh] md:max-h-[55vh] flex flex-col
                       bg-slate-800/90 backdrop-blur-md rounded-xl border border-slate-700 shadow-xl overflow-hidden"
       >
-        <div className="px-4 py-2.5 border-b border-slate-700 flex items-center justify-between">
-          <h2 className="text-white font-medium text-sm">Journal</h2>
-          <span className="text-xs text-slate-500 tabular-nums">{logs.length}</span>
+        <div className="px-3 md:px-4 py-2 border-b border-slate-700 flex items-center justify-between">
+          <h2 className="text-white font-medium text-[10px] md:text-xs">Journal</h2>
+          <span className="text-[9px] md:text-xs text-slate-500 tabular-nums">{logs.length}</span>
         </div>
-        <div className="flex-1 overflow-y-auto p-2 space-y-1">
+        <div className="flex-1 overflow-y-auto p-1.5 md:p-2 space-y-1">
           {logs.length === 0 && (
-            <p className="text-slate-500 text-xs text-center py-8">
+            <p className="text-slate-500 text-[9px] md:text-xs text-center py-6 md:py-8">
               Aucun événement — lancez la simulation
             </p>
           )}
           {logs.map((log) => (
             <div
               key={log.id}
-              className={`text-xs px-2.5 py-1.5 rounded-lg border ${logColors[log.type] || logColors.info}`}
+              className={`text-[9px] md:text-xs px-1.5 md:px-2.5 py-1 md:py-1.5 rounded-lg border ${logColors[log.type] || logColors.info}`}
             >
               <div className="flex items-center justify-between mb-0.5">
-                <span className="font-medium uppercase text-[10px] opacity-70">{log.type}</span>
-                <span className="text-[10px] opacity-50 tabular-nums">{log.timestamp}</span>
+                <span className="font-medium uppercase text-[9px] md:text-[10px] opacity-70">{log.type}</span>
+                <span className="text-[9px] md:text-[10px] opacity-50 tabular-nums">{log.timestamp}</span>
               </div>
-              <div className="leading-snug">{log.message}</div>
+              <div className="leading-snug text-[9px] md:text-xs">{log.message}</div>
             </div>
           ))}
         </div>
@@ -477,23 +480,23 @@ export default function App() {
       {/* Emprunts en cours et rendus en attente - tableau unique */}
       {(activeLoans.length > 0 || pendingReturns.length > 0) && (
         <div
-          className="absolute bottom-20 right-4 z-10 w-[420px] max-h-[350px] flex flex-col
+          className="absolute bottom-16 md:bottom-20 right-2 md:right-4 z-10 w-[calc(100vw-16px)] md:w-[420px] max-h-[40vh] md:max-h-[350px] flex flex-col
                         bg-slate-800/90 backdrop-blur-md rounded-xl border border-slate-700 shadow-xl overflow-hidden"
         >
-          <div className="px-4 py-2 border-b border-slate-700 flex items-center justify-between">
-            <h3 className="text-white font-medium text-xs">Emprunts</h3>
-            <span className="text-xs font-medium text-amber-400 tabular-nums">
+          <div className="px-3 md:px-4 py-2 border-b border-slate-700 flex items-center justify-between">
+            <h3 className="text-white font-medium text-[10px] md:text-xs">Emprunts</h3>
+            <span className="text-[10px] md:text-xs font-medium text-amber-400 tabular-nums">
               {activeLoans.length + pendingReturns.length}
             </span>
           </div>
-          <div className="p-2 max-h-[300px] overflow-y-auto">
-            <table className="w-full text-xs">
+          <div className="p-1.5 md:p-2 max-h-[35vh] md:max-h-[300px] overflow-y-auto">
+            <table className="w-full text-[10px] md:text-xs">
               <thead>
-                <tr className="text-slate-500 text-[10px] uppercase tracking-wider border-b border-slate-700/50">
-                  <th className="text-left py-1.5 px-2">Emprunteur</th>
-                  <th className="text-left py-1.5 px-2">Livre</th>
-                  <th className="text-center py-1.5 px-2">Durée</th>
-                  <th className="text-center py-1.5 px-2">Actions</th>
+                <tr className="text-slate-500 text-[9px] md:text-[10px] uppercase tracking-wider border-b border-slate-700/50">
+                  <th className="text-left py-1 px-1.5 md:py-1.5 md:px-2">Emprunteur</th>
+                  <th className="text-left py-1 px-1.5 md:py-1.5 md:px-2">Livre</th>
+                  <th className="text-center py-1 px-1.5 md:py-1.5 md:px-2">Durée</th>
+                  <th className="text-center py-1 px-1.5 md:py-1.5 md:px-2">Actions</th>
                 </tr>
               </thead>
               <tbody>
@@ -507,27 +510,27 @@ export default function App() {
                       key={loan.loanId}
                       className="border-b border-slate-700/30 hover:bg-slate-700/30"
                     >
-                      <td className="py-2 px-2 text-slate-300 font-medium truncate max-w-[100px]">
+                      <td className="py-1.5 md:py-2 px-1.5 md:px-2 text-slate-300 font-medium truncate max-w-[60px] md:max-w-[100px]">
                         {loan.borrowerName}
                       </td>
-                      <td className="py-2 px-2">
+                      <td className="py-1.5 md:py-2 px-1.5 md:px-2">
                         <span
-                          className="font-medium"
+                          className="font-medium text-[9px] md:text-xs"
                           style={{ color: bookType?.color }}
                         >
                           {loan.label}
                         </span>
                       </td>
-                      <td className="py-2 px-2 text-center font-mono">
+                      <td className="py-1.5 md:py-2 px-1.5 md:px-2 text-center font-mono">
                         <span className={isLate ? 'text-amber-400' : 'text-slate-400'}>
                           {isLate ? `+${elapsed - (RENDER_DELAY_MS / 1000)}s` : `${elapsed}s`}
                         </span>
                       </td>
-                      <td className="py-2 px-2">
-                        <div className="flex gap-1 justify-center">
+                      <td className="py-1.5 md:py-2 px-1.5 md:px-2">
+                        <div className="flex gap-0.5 md:gap-1 justify-center">
                           <button
                             onClick={() => handleManualReturn(loan.loanId)}
-                            className="px-2 py-1 rounded text-[10px] font-medium
+                            className="px-1.5 md:px-2 py-0.5 md:py-1 rounded text-[9px] md:text-[10px] font-medium
                                        bg-emerald-800/60 text-emerald-300 border border-emerald-700/50
                                        hover:bg-emerald-700/70 transition-colors"
                             title="Rendre le livre"
@@ -564,13 +567,13 @@ export default function App() {
       )}
 
       {/* Barre inférieure */}
-      <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-10">
-        <div className="bg-slate-800/90 backdrop-blur-md px-4 py-1.5 rounded-full border border-slate-700 shadow-lg flex items-center gap-3 text-[11px] text-slate-400">
+      <div className="absolute bottom-2 md:bottom-4 left-1/2 -translate-x-1/2 z-10">
+        <div className="bg-slate-800/90 backdrop-blur-md px-2 md:px-4 py-1 md:py-1.5 rounded-full border border-slate-700 shadow-lg flex items-center gap-2 md:gap-3 text-[9px] md:text-[11px] text-slate-400">
           <span>Étape : {STEP_DURATION_MS / 1000}s</span>
           <span className="text-slate-600">|</span>
           <span>Rendu : {RENDER_DELAY_MS / 1000}s</span>
-          <span className="text-slate-600">|</span>
-          <span>Molette = Zoom</span>
+          <span className="hidden md:inline text-slate-600">|</span>
+          <span className="hidden md:inline">Molette = Zoom</span>
         </div>
       </div>
     </div>

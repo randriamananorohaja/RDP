@@ -36,61 +36,61 @@ export function ConfigPanel({ initialConfig, bookTypes, onApply, onClose }) {
       />
 
       <div
-        className="fixed top-0 right-0 h-full w-full max-w-sm z-50
+        className="fixed top-0 right-0 h-full w-[85vw] md:w-full md:max-w-sm z-50
                    bg-slate-800 border-l border-slate-700
                    shadow-2xl overflow-y-auto"
       >
-        <form onSubmit={handleSubmit} className="p-5">
-          <div className="flex items-start justify-between mb-6">
+        <form onSubmit={handleSubmit} className="p-4 md:p-5">
+          <div className="flex items-start justify-between mb-4 md:mb-6">
             <div>
-              <h2 className="text-lg font-semibold text-white">Configuration</h2>
-              <p className="text-slate-400 text-xs mt-0.5">
+              <h2 className="text-base md:text-lg font-semibold text-white">Configuration</h2>
+              <p className="text-slate-400 text-[10px] md:text-xs mt-0.5">
                 Stocks initiaux par type
               </p>
             </div>
             <button
               type="button"
               onClick={onClose}
-              className="w-8 h-8 rounded-lg bg-slate-700/80 hover:bg-slate-600 text-slate-300
-                         flex items-center justify-center transition-colors text-sm"
+              className="w-7 h-7 md:w-8 md:h-8 rounded-lg bg-slate-700/80 hover:bg-slate-600 text-slate-300
+                         flex items-center justify-center transition-colors text-xs md:text-sm"
             >
               ✕
             </button>
           </div>
 
-          <div className="space-y-4">
+          <div className="space-y-3 md:space-y-4">
             {/* Stocks */}
-            <div className="bg-slate-900/60 rounded-xl p-4 border border-slate-700">
-              <p className="text-slate-300 text-sm font-medium mb-3">Stock par type</p>
-              <div className="space-y-2.5">
+            <div className="bg-slate-900/60 rounded-xl p-3 md:p-4 border border-slate-700">
+              <p className="text-slate-300 text-xs md:text-sm font-medium mb-2 md:mb-3">Stock par type</p>
+              <div className="space-y-2 md:space-y-2.5">
                 {bookTypes.map((bt) => (
-                  <div key={bt.id} className="flex items-center gap-3">
+                  <div key={bt.id} className="flex items-center gap-2 md:gap-3">
                     <span
-                      className="w-2.5 h-2.5 rounded-full flex-shrink-0"
+                      className="w-2 h-2 md:w-2.5 md:h-2.5 rounded-full flex-shrink-0"
                       style={{ background: bt.color }}
                     />
-                    <span className="text-slate-300 text-sm flex-1">{bt.label}</span>
+                    <span className="text-slate-300 text-xs md:text-sm flex-1">{bt.label}</span>
                     <input
                       type="number"
                       min="0"
                       value={stock[bt.id] ?? 0}
                       onChange={(e) => handleStockChange(bt.id, e.target.value)}
-                      className="w-16 px-2.5 py-1.5 rounded-lg bg-slate-800 border border-slate-600
-                                 text-white text-sm font-medium text-center tabular-nums
+                      className="w-14 md:w-16 px-2 md:px-2.5 py-1 md:py-1.5 rounded-lg bg-slate-800 border border-slate-600
+                                 text-white text-xs md:text-sm font-medium text-center tabular-nums
                                  focus:border-cyan-500 outline-none transition-colors"
                     />
                   </div>
                 ))}
               </div>
-              <div className="mt-3 pt-2.5 border-t border-slate-700 flex justify-between text-xs">
+              <div className="mt-2 md:mt-3 pt-2 md:pt-2.5 border-t border-slate-700 flex justify-between text-[10px] md:text-xs">
                 <span className="text-slate-500">Total stock</span>
                 <span className="text-cyan-400 font-semibold tabular-nums">{totalStock}</span>
               </div>
             </div>
 
             {/* Emprunts initiaux */}
-            <div className="bg-slate-900/60 rounded-xl p-4 border border-slate-700">
-              <label className="text-slate-300 text-sm font-medium block mb-2">
+            <div className="bg-slate-900/60 rounded-xl p-3 md:p-4 border border-slate-700">
+              <label className="text-slate-300 text-xs md:text-sm font-medium block mb-2">
                 Emprunts en attente (initiaux)
               </label>
               <input
@@ -98,8 +98,8 @@ export function ConfigPanel({ initialConfig, bookTypes, onApply, onClose }) {
                 min="0"
                 value={nbEmpruntsInitial}
                 onChange={(e) => setNbEmpruntsInitial(e.target.value)}
-                className={`w-full px-3.5 py-2.5 rounded-lg bg-slate-800 border
-                           text-white text-base font-medium tabular-nums
+                className={`w-full px-3 md:px-3.5 py-2 md:py-2.5 rounded-lg bg-slate-800 border
+                           text-white text-sm md:text-base font-medium tabular-nums
                            focus:ring-1 outline-none transition-colors
                            ${
                              empruntsInvalides
@@ -108,18 +108,18 @@ export function ConfigPanel({ initialConfig, bookTypes, onApply, onClose }) {
                            }`}
               />
               {empruntsInvalides && (
-                <p className="text-rose-400 text-xs mt-2">
+                <p className="text-rose-400 text-[10px] md:text-xs mt-2">
                   Ne peut pas dépasser le stock total ({totalStock})
                 </p>
               )}
             </div>
           </div>
 
-          <div className="flex gap-2 mt-6">
+          <div className="flex gap-2 mt-4 md:mt-6">
             <button
               type="button"
               onClick={onClose}
-              className="flex-1 py-2.5 rounded-lg text-sm font-medium bg-slate-700 text-slate-200
+              className="flex-1 py-2 md:py-2.5 rounded-lg text-xs md:text-sm font-medium bg-slate-700 text-slate-200
                          hover:bg-slate-600 border border-slate-600 transition-colors"
             >
               Annuler
@@ -127,7 +127,7 @@ export function ConfigPanel({ initialConfig, bookTypes, onApply, onClose }) {
             <button
               type="submit"
               disabled={empruntsInvalides}
-              className={`flex-1 py-2.5 rounded-lg text-sm font-medium transition-colors
+              className={`flex-1 py-2 md:py-2.5 rounded-lg text-xs md:text-sm font-medium transition-colors
                 ${
                   empruntsInvalides
                     ? 'bg-slate-800 text-slate-500 cursor-not-allowed border border-slate-700'
